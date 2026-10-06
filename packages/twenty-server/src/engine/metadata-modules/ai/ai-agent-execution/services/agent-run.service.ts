@@ -25,16 +25,14 @@ import { fromApiKeyEntityToFlat } from 'src/engine/core-modules/api-key/utils/fr
 import { ApplicationLookupService } from 'src/engine/core-modules/application/application-lookup/application-lookup.service';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { workspaceAuthContextStorage } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
-import {
-  type ApplicationWorkspaceAuthContext,
-  type WorkspaceAuthContext,
-} from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import { type ApplicationWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { buildApiKeyAuthContext } from 'src/engine/core-modules/auth/utils/build-api-key-auth-context.util';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { AgentActorContextService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-actor-context.service';
 import { AgentRunCallerHandlerRegistryService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-run-caller-handler-registry.service';
 import { AgentRunnerService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-runner.service';
+import { type AgentRunCallerContext } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-run-caller-context.type';
 import { type AgentRunCaller } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-run-caller.type';
 import { type AgentRunCallerInput } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-run-caller-input.type';
 import { type AgentRunCallerHandler } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-run-caller-handler.type';
@@ -299,13 +297,17 @@ export class AgentRunService
         })
       : undefined;
 
-    const { authContext, actorContext } =
+    const { authContext, actorContext, callerRoleId }: AgentRunCallerContext =
       runAsContext ??
       (await this.resolveCallerContext({
         workspaceId,
         ref,
         agentAuthContext: agentContext.authContext,
       }));
+
+    const additionalRoleRestrictionIds = isDefined(callerRoleId)
+      ? [callerRoleId]
+      : undefined;
 
     return {
       authContext,
@@ -315,8 +317,10 @@ export class AgentRunService
       rolePermissionConfig: buildAgentRolePermissionConfig({
         agentRoleId: agentContext.agentRoleId,
         runAsRoleId: runAsContext?.roleId,
+        additionalRoleRestrictionIds,
       }),
       runAsRoleId: runAsContext?.roleId,
+      additionalRoleRestrictionIds,
       conversationActor: isDefined(runAsContext)
         ? {
             type: 'user',
@@ -430,19 +434,16 @@ export class AgentRunService
     workspaceId: string;
     ref: AgentApiRunCaller['ref'];
     agentAuthContext: ApplicationWorkspaceAuthContext;
-  }): Promise<{
-    authContext: WorkspaceAuthContext;
-    actorContext?: ActorMetadata;
-  }> {
+  }): Promise<AgentRunCallerContext> {
     if (isDefined(ref.callerWorkspaceMemberId)) {
-      const { authContext, actorContext } =
+      const { authContext, actorContext, roleId } =
         await this.agentActorContextService.buildRunAsWorkspaceMemberContext({
           workspaceMemberId: ref.callerWorkspaceMemberId,
           workspaceId,
           viaApplication: agentAuthContext.application,
         });
 
-      return { authContext, actorContext };
+      return { authContext, actorContext, callerRoleId: roleId };
     }
 
     if (isDefined(ref.callerApiKeyId)) {
