@@ -16,6 +16,9 @@ export type AgentRunCaller =
       ref: {
         agentId: string;
         runAsWorkspaceMemberId: string | null;
+        // who a run that names no member acts as, when it is not the agent's application
+        callerWorkspaceMemberId?: string;
+        callerApiKeyId?: string;
         requestUserWorkspaceId: string | null;
         // the request's own actor cannot be read back once it is over
         createdBy: ActorMetadata;

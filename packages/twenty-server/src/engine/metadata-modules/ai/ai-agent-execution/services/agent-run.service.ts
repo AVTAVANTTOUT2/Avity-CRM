@@ -18,9 +18,18 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { buildActorMetadataFromAuthContext } from 'src/engine/core-modules/actor/utils/build-actor-metadata-from-auth-context.util';
 import { buildCreatedByFromApplication } from 'src/engine/core-modules/actor/utils/build-created-by-from-application.util';
+import { ApiKeyException } from 'src/engine/core-modules/api-key/exceptions/api-key.exception';
+import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
+import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
+import { fromApiKeyEntityToFlat } from 'src/engine/core-modules/api-key/utils/from-api-key-entity-to-flat.util';
 import { ApplicationLookupService } from 'src/engine/core-modules/application/application-lookup/application-lookup.service';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { workspaceAuthContextStorage } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
+import {
+  type ApplicationWorkspaceAuthContext,
+  type WorkspaceAuthContext,
+} from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import { buildApiKeyAuthContext } from 'src/engine/core-modules/auth/utils/build-api-key-auth-context.util';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { AgentActorContextService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-actor-context.service';
@@ -68,6 +77,7 @@ export class AgentRunService
     private readonly agentActorContextService: AgentActorContextService,
     private readonly agentRunnerService: AgentRunnerService,
     private readonly callerHandlerRegistry: AgentRunCallerHandlerRegistryService,
+    private readonly apiKeyService: ApiKeyService,
     private readonly applicationLookupService: ApplicationLookupService,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
@@ -82,12 +92,14 @@ export class AgentRunService
     requestUserWorkspaceId,
     requestWorkspaceMemberId,
     callerApplication,
+    callerApiKey,
     input,
   }: {
     workspace: FlatWorkspace;
     requestUserWorkspaceId: string | null;
     requestWorkspaceMemberId: string | null;
     callerApplication?: FlatApplication;
+    callerApiKey?: FlatApiKey;
     input: RunAgentServiceInput;
   }): Promise<RunAgentResult> {
     const messages = resolveRunAgentMessagesOrThrow({
@@ -177,6 +189,14 @@ export class AgentRunService
       ref: {
         agentId: agent.id,
         runAsWorkspaceMemberId: input.runAsWorkspaceMemberId ?? null,
+        ...(isDefined(runAsContext)
+          ? {}
+          : this.resolveCallerRef({
+              callerApplication,
+              callerApiKey,
+              requestUserWorkspaceId,
+              requestWorkspaceMemberId,
+            })),
         requestUserWorkspaceId,
         createdBy:
           runAsContext?.actorContext ??
@@ -279,9 +299,17 @@ export class AgentRunService
         })
       : undefined;
 
+    const { authContext, actorContext } =
+      runAsContext ??
+      (await this.resolveCallerContext({
+        workspaceId,
+        ref,
+        agentAuthContext: agentContext.authContext,
+      }));
+
     return {
-      authContext: runAsContext?.authContext ?? agentContext.authContext,
-      actorContext: runAsContext?.actorContext,
+      authContext,
+      actorContext,
       userWorkspaceId:
         runAsContext?.authContext.userWorkspaceId ?? ref.requestUserWorkspaceId,
       rolePermissionConfig: buildAgentRolePermissionConfig({
@@ -318,14 +346,34 @@ export class AgentRunService
       return 'GONE';
     }
 
-    if (!isDefined(caller.ref.runAsWorkspaceMemberId)) {
+    if (isDefined(caller.ref.callerApiKeyId)) {
+      try {
+        await this.apiKeyService.validateApiKey(
+          caller.ref.callerApiKeyId,
+          workspaceId,
+        );
+
+        return 'WAITING';
+      } catch (error) {
+        if (error instanceof ApiKeyException) {
+          return 'GONE';
+        }
+
+        throw error;
+      }
+    }
+
+    const workspaceMemberId =
+      caller.ref.runAsWorkspaceMemberId ?? caller.ref.callerWorkspaceMemberId;
+
+    if (!isDefined(workspaceMemberId)) {
       return 'WAITING';
     }
 
     // a run acting as a member who left can never continue, so it must release its thread
     try {
       await this.agentActorContextService.buildRunAsWorkspaceMemberContext({
-        workspaceMemberId: caller.ref.runAsWorkspaceMemberId,
+        workspaceMemberId,
         workspaceId,
       });
 
@@ -340,6 +388,78 @@ export class AgentRunService
 
       throw error;
     }
+  }
+
+  private resolveCallerRef({
+    callerApplication,
+    callerApiKey,
+    requestUserWorkspaceId,
+    requestWorkspaceMemberId,
+  }: {
+    callerApplication?: FlatApplication;
+    callerApiKey?: FlatApiKey;
+    requestUserWorkspaceId: string | null;
+    requestWorkspaceMemberId: string | null;
+  }): Pick<
+    AgentApiRunCaller['ref'],
+    'callerWorkspaceMemberId' | 'callerApiKeyId'
+  > {
+    if (isDefined(requestWorkspaceMemberId)) {
+      return { callerWorkspaceMemberId: requestWorkspaceMemberId };
+    }
+
+    if (isDefined(callerApplication) && !isDefined(requestUserWorkspaceId)) {
+      return {};
+    }
+
+    if (isDefined(callerApiKey)) {
+      return { callerApiKeyId: callerApiKey.id };
+    }
+
+    throw new AiException(
+      'Running an agent requires a workspace member, an API key or the agent application',
+      AiExceptionCode.RUN_AGENT_NOT_ALLOWED,
+    );
+  }
+
+  private async resolveCallerContext({
+    workspaceId,
+    ref,
+    agentAuthContext,
+  }: {
+    workspaceId: string;
+    ref: AgentApiRunCaller['ref'];
+    agentAuthContext: ApplicationWorkspaceAuthContext;
+  }): Promise<{
+    authContext: WorkspaceAuthContext;
+    actorContext?: ActorMetadata;
+  }> {
+    if (isDefined(ref.callerWorkspaceMemberId)) {
+      const { authContext, actorContext } =
+        await this.agentActorContextService.buildRunAsWorkspaceMemberContext({
+          workspaceMemberId: ref.callerWorkspaceMemberId,
+          workspaceId,
+          viaApplication: agentAuthContext.application,
+        });
+
+      return { authContext, actorContext };
+    }
+
+    if (isDefined(ref.callerApiKeyId)) {
+      const apiKey = await this.apiKeyService.validateApiKey(
+        ref.callerApiKeyId,
+        workspaceId,
+      );
+
+      return {
+        authContext: buildApiKeyAuthContext({
+          workspace: agentAuthContext.workspace,
+          apiKey: fromApiKeyEntityToFlat(apiKey),
+        }),
+      };
+    }
+
+    return { authContext: agentAuthContext };
   }
 
   private buildRunCreator({
