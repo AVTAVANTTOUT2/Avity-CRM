@@ -16,11 +16,13 @@ export const captureAgentRunExecution = async ({
   agentUniversalIdentifier,
   token,
   thread,
+  runAsWorkspaceMemberId,
   steps = [],
 }: {
   agentUniversalIdentifier: string;
   token: string;
   thread?: RunAgentThread;
+  runAsWorkspaceMemberId?: string;
   steps?: AgentExecutionResult['steps'];
 }): Promise<AgentRunExecution> => {
   const executeAgentSpy = jest
@@ -63,7 +65,12 @@ export const captureAgentRunExecution = async ({
 
   try {
     const response = await makeMetadataApiRequest(
-      runAgentQueryFactory({ agentUniversalIdentifier, prompt: 'Run', thread }),
+      runAgentQueryFactory({
+        agentUniversalIdentifier,
+        prompt: 'Run',
+        thread,
+        runAsWorkspaceMemberId,
+      }),
       token,
     );
 
