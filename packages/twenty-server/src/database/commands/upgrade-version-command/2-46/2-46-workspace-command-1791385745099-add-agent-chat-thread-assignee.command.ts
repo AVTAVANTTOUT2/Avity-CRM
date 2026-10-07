@@ -37,7 +37,7 @@ const ASSIGNEE_COMMAND_MENU_ITEM_NAMES = ['assignAiChat'] as const;
 // The assignee cannot unsubscribe, so Unsubscribe hides for them. Only an
 // expression still as the subscriptions command saved it is changed
 const UNSUBSCRIBE_EXPRESSION_BEFORE_ASSIGNEES =
-  'numberOfSelectedRecords >= 1 and permissionFlags.AI and noneDefined(selectedRecords, "deletedAt") and everyEquals(selectedRecords, "inboxStatus.isSubscribed", true)';
+  'numberOfSelectedRecords >= 1 and permissionFlags.AI and featureFlags.IS_AI_CHAT_INBOX_ENABLED and noneDefined(selectedRecords, "deletedAt") and everyEquals(selectedRecords, "inboxStatus.isSubscribed", true)';
 
 const UNSUBSCRIBE_EXPRESSION_WITH_ASSIGNEES = `${UNSUBSCRIBE_EXPRESSION_BEFORE_ASSIGNEES} and noneEquals(selectedRecords, "inboxStatus.isAssignedToMe", true)`;
 
