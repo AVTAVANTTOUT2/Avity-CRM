@@ -742,7 +742,9 @@
       "Banner": "primitives/feedback/Banner/Banner",
       "Loader": "primitives/feedback/Loader/Loader",
       "ProgressBar": "primitives/feedback/ProgressBar/ProgressBar",
-      "ProgressRing": "primitives/feedback/ProgressRing/ProgressRing"
+      "ProgressRing": "primitives/feedback/ProgressRing/ProgressRing",
+      "Skeleton": "primitives/feedback/Skeleton/Skeleton",
+      "SKELETON_HEIGHT_SIZES": "primitives/feedback/Skeleton/constants/SKELETON_HEIGHT_SIZES"
     },
     "types": {
       "BannerColor": "primitives/feedback/Banner/types/BannerColor",
@@ -752,7 +754,8 @@
       "BannerVariant": "primitives/feedback/Banner/types/BannerVariant",
       "LoaderProps": "primitives/feedback/Loader/types/LoaderProps",
       "ProgressBarProps": "primitives/feedback/ProgressBar/types/ProgressBarProps",
-      "ProgressRingProps": "primitives/feedback/ProgressRing/types/ProgressRingProps"
+      "ProgressRingProps": "primitives/feedback/ProgressRing/types/ProgressRingProps",
+      "SkeletonProps": "primitives/feedback/Skeleton/types/SkeletonProps"
     }
   },
   "primitives/input": {
@@ -784,6 +787,7 @@
       "AutocompleteRootProps": "primitives/input/Autocomplete/types/AutocompleteRootProps",
       "ButtonColor": "primitives/input/Button/types/ButtonColor",
       "ButtonGroupProps": "primitives/input/ButtonGroup/types/ButtonGroupProps",
+      "ButtonLoadingPosition": "primitives/input/Button/types/ButtonLoadingPosition",
       "ButtonProps": "primitives/input/Button/types/ButtonProps",
       "ButtonSize": "primitives/input/Button/types/ButtonSize",
       "ButtonVariant": "primitives/input/Button/types/ButtonVariant",
