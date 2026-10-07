@@ -1,21 +1,27 @@
 import { runAgentQueryFactory } from 'test/integration/graphql/suites/user-session/utils/run-agent-query-factory.util';
 import { makeMetadataApiRequest } from 'test/integration/metadata/suites/utils/make-metadata-api-request.util';
 import { getAppProviderByClassName } from 'test/integration/utils/get-app-provider-by-class-name.util';
+import { type RunAgentThread } from 'twenty-shared/application';
 import { isDefined } from 'twenty-shared/utils';
 
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { type AgentAsyncExecutorService } from 'src/engine/metadata-modules/ai/ai-agent-execution/services/agent-async-executor.service';
+import { type AgentExecutionResult } from 'src/engine/metadata-modules/ai/ai-agent-execution/types/agent-execution-result.type';
 
 export type AgentRunExecution = Parameters<
   AgentAsyncExecutorService['executeAgent']
->[0] & { authContext: WorkspaceAuthContext };
+>[0] & { authContext: WorkspaceAuthContext; threadId: string };
 
 export const captureAgentRunExecution = async ({
   agentUniversalIdentifier,
   token,
+  thread,
+  steps = [],
 }: {
   agentUniversalIdentifier: string;
   token: string;
+  thread?: RunAgentThread;
+  steps?: AgentExecutionResult['steps'];
 }): Promise<AgentRunExecution> => {
   const executeAgentSpy = jest
     .spyOn(
@@ -41,7 +47,7 @@ export const captureAgentRunExecution = async ({
       nativeWebSearchCallCount: 0,
       hasNoMoreAvailableCredits: false,
       isPaused: false,
-      steps: [],
+      steps,
       modelId: 'stub-model',
       totalCostInDollars: 0,
       creditsUsedMicro: 0,
@@ -57,7 +63,7 @@ export const captureAgentRunExecution = async ({
 
   try {
     const response = await makeMetadataApiRequest(
-      runAgentQueryFactory({ agentUniversalIdentifier, prompt: 'Run' }),
+      runAgentQueryFactory({ agentUniversalIdentifier, prompt: 'Run', thread }),
       token,
     );
 
@@ -69,7 +75,11 @@ export const captureAgentRunExecution = async ({
       );
     }
 
-    return { ...execution, authContext: execution.authContext };
+    return {
+      ...execution,
+      authContext: execution.authContext,
+      threadId: response.body.data.runAgent.threadId,
+    };
   } finally {
     executeAgentSpy.mockRestore();
   }

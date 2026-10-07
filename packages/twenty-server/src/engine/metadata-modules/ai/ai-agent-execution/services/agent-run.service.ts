@@ -24,6 +24,7 @@ import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-
 import { fromApiKeyEntityToFlat } from 'src/engine/core-modules/api-key/utils/from-api-key-entity-to-flat.util';
 import { ApplicationLookupService } from 'src/engine/core-modules/application/application-lookup/application-lookup.service';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
+import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { workspaceAuthContextStorage } from 'src/engine/core-modules/auth/storage/workspace-auth-context.storage';
 import { type ApplicationWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { buildApiKeyAuthContext } from 'src/engine/core-modules/auth/utils/build-api-key-auth-context.util';
@@ -62,6 +63,8 @@ type RunAgentServiceInput = {
 };
 
 type AgentApiRunCaller = Extract<AgentRunCaller, { type: 'AGENT_API_RUN' }>;
+
+type AgentApiRunCallerRef = Omit<AgentApiRunCaller['ref'], 'createdBy'>;
 
 // Runs an agent for the runAgent API. A run that waits goes on later with the API call as its
 // caller, and its reply lands in its conversation
@@ -182,22 +185,37 @@ export class AgentRunService
         })
       : randomUUID();
 
+    const callerRef: AgentApiRunCallerRef = {
+      agentId: agent.id,
+      runAsWorkspaceMemberId: input.runAsWorkspaceMemberId ?? null,
+      ...(isDefined(runAsContext)
+        ? {}
+        : this.resolveCallerRef({
+            callerApplication,
+            callerApiKey,
+            requestUserWorkspaceId,
+            requestWorkspaceMemberId,
+          })),
+      requestUserWorkspaceId,
+    };
+
+    const executionContext = await this.buildRunExecutionContext({
+      workspaceId: workspace.id,
+      ref: callerRef,
+    });
+
+    const memberUserWorkspaceId = isUserAuthContext(
+      executionContext.authContext,
+    )
+      ? executionContext.authContext.userWorkspaceId
+      : null;
+
     const caller: AgentApiRunCaller = {
       type: 'AGENT_API_RUN',
       ref: {
-        agentId: agent.id,
-        runAsWorkspaceMemberId: input.runAsWorkspaceMemberId ?? null,
-        ...(isDefined(runAsContext)
-          ? {}
-          : this.resolveCallerRef({
-              callerApplication,
-              callerApiKey,
-              requestUserWorkspaceId,
-              requestWorkspaceMemberId,
-            })),
-        requestUserWorkspaceId,
+        ...callerRef,
         createdBy:
-          runAsContext?.actorContext ??
+          executionContext.actorContext ??
           this.buildRunCreator({ callerApplication, application }),
       },
     };
@@ -223,16 +241,10 @@ export class AgentRunService
         agent,
         prompt: {
           messages,
-          // a member calling without runAs still sent the input, while an app's call has no member behind it
-          senderUserWorkspaceId:
-            runAsContext?.authContext.userWorkspaceId ??
-            (isDefined(callerApplication) ? null : requestUserWorkspaceId),
+          senderUserWorkspaceId: memberUserWorkspaceId,
           senderApplicationId: callerApplication?.id ?? null,
         },
-        executionContext: await this.buildExecutionContext({
-          workspaceId: workspace.id,
-          caller,
-        }),
+        executionContext,
         resolveCreatedBy: async () => caller.ref.createdBy,
       });
 
@@ -272,6 +284,17 @@ export class AgentRunService
     workspaceId,
     caller: { ref },
   }: AgentRunCallerInput<AgentApiRunCaller>): Promise<AgentRunExecutionContext> {
+    return this.buildRunExecutionContext({ workspaceId, ref });
+  }
+
+  // run() builds the context before its caller, whose turn author depends on it
+  private async buildRunExecutionContext({
+    workspaceId,
+    ref,
+  }: {
+    workspaceId: string;
+    ref: AgentApiRunCallerRef;
+  }): Promise<AgentRunExecutionContext> {
     const agent = await this.agentRepository.findOne(workspaceId, {
       where: { id: ref.agentId },
     });
@@ -309,6 +332,10 @@ export class AgentRunService
       ? [callerRoleId]
       : undefined;
 
+    const memberUserWorkspaceId = isUserAuthContext(authContext)
+      ? authContext.userWorkspaceId
+      : null;
+
     return {
       authContext,
       actorContext,
@@ -321,11 +348,8 @@ export class AgentRunService
       }),
       runAsRoleId: runAsContext?.roleId,
       additionalRoleRestrictionIds,
-      conversationActor: isDefined(runAsContext)
-        ? {
-            type: 'user',
-            userWorkspaceId: runAsContext.authContext.userWorkspaceId,
-          }
+      conversationActor: isDefined(memberUserWorkspaceId)
+        ? { type: 'user', userWorkspaceId: memberUserWorkspaceId }
         : { type: 'application', applicationId: agentContext.application.id },
       usageOperationType: UsageOperationType.AI_WORKFLOW_TOKEN,
     };
@@ -432,7 +456,7 @@ export class AgentRunService
     agentAuthContext,
   }: {
     workspaceId: string;
-    ref: AgentApiRunCaller['ref'];
+    ref: AgentApiRunCallerRef;
     agentAuthContext: ApplicationWorkspaceAuthContext;
   }): Promise<AgentRunCallerContext> {
     if (isDefined(ref.callerWorkspaceMemberId)) {
