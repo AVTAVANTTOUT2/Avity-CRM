@@ -262,7 +262,6 @@ export class AgentRunnerService {
           authContext: executionContext.authContext,
           workspaceId,
           userWorkspaceId: executionContext.userWorkspaceId,
-          runAsRoleId: executionContext.runAsRoleId,
           additionalRoleRestrictionIds:
             executionContext.additionalRoleRestrictionIds,
           additionalExcludedToolNames: spec.additionalExcludedToolNames,

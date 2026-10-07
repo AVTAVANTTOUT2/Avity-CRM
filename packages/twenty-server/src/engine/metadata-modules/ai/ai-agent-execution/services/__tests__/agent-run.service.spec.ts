@@ -190,7 +190,7 @@ describe('AgentRunService', () => {
     expect(executionContext).toMatchObject({
       actorContext: RUN_AS_ACTOR,
       userWorkspaceId: RUN_AS_USER_WORKSPACE_ID,
-      runAsRoleId: 'role-id',
+      additionalRoleRestrictionIds: ['role-id'],
       rolePermissionConfig: { intersectionOf: ['agent-role-id', 'role-id'] },
       conversationActor: {
         type: 'user',

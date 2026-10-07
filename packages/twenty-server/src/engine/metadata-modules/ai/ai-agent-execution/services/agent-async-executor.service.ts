@@ -158,18 +158,15 @@ export class AgentAsyncExecutorService {
   // preloading the few granted object schemas saves the model a learn_tools round trip
   private async buildPreloadedRegistryTools({
     toolContext,
-    runAsRoleId,
     additionalRoleRestrictionIds,
     additionalExcludedToolNames = [],
   }: {
     toolContext: RegistryToolContext;
-    runAsRoleId?: string;
     additionalRoleRestrictionIds?: string[];
     additionalExcludedToolNames?: readonly string[];
   }): Promise<{ tools: ToolSet; proposableTools: ProposableTools }> {
     const rolePermissionConfig = buildAgentRolePermissionConfig({
       agentRoleId: toolContext.roleId,
-      runAsRoleId,
       additionalRoleRestrictionIds,
     });
     const preloadedToolContext = { ...toolContext, rolePermissionConfig };
@@ -207,12 +204,10 @@ export class AgentAsyncExecutorService {
   // learn_tools / execute_tool instead, scoped by composed role permissions rather than explicit grants only
   private async buildLazyRegistryTools({
     toolContext: baseToolContext,
-    runAsRoleId,
     additionalRoleRestrictionIds,
     additionalExcludedToolNames = [],
   }: {
     toolContext: RegistryToolContext;
-    runAsRoleId?: string;
     additionalRoleRestrictionIds?: string[];
     additionalExcludedToolNames?: readonly string[];
   }): Promise<{
@@ -220,17 +215,17 @@ export class AgentAsyncExecutorService {
     catalogSection: string;
     proposableTools: ProposableTools;
   }> {
-    const toolContext: ToolContext =
-      isDefined(runAsRoleId) || isNonEmptyArray(additionalRoleRestrictionIds)
-        ? {
-            ...baseToolContext,
-            rolePermissionConfig: buildAgentRolePermissionConfig({
-              agentRoleId: baseToolContext.roleId,
-              runAsRoleId,
-              additionalRoleRestrictionIds,
-            }),
-          }
-        : baseToolContext;
+    const toolContext: ToolContext = isNonEmptyArray(
+      additionalRoleRestrictionIds,
+    )
+      ? {
+          ...baseToolContext,
+          rolePermissionConfig: buildAgentRolePermissionConfig({
+            agentRoleId: baseToolContext.roleId,
+            additionalRoleRestrictionIds,
+          }),
+        }
+      : baseToolContext;
     const {
       workspaceId,
       roleId,
@@ -323,7 +318,6 @@ export class AgentAsyncExecutorService {
     authContext,
     workspaceId,
     userWorkspaceId,
-    runAsRoleId,
     additionalRoleRestrictionIds,
     additionalExcludedToolNames,
     toolLoadingStrategy = 'preload',
@@ -344,7 +338,6 @@ export class AgentAsyncExecutorService {
     authContext?: WorkspaceAuthContext;
     workspaceId: string;
     userWorkspaceId?: string | null;
-    runAsRoleId?: string;
     additionalRoleRestrictionIds?: string[];
     additionalExcludedToolNames?: readonly string[];
     toolLoadingStrategy?: AgentToolLoadingStrategy;
@@ -426,14 +419,12 @@ export class AgentAsyncExecutorService {
             toolLoadingStrategy === 'lazy'
               ? await this.buildLazyRegistryTools({
                   toolContext,
-                  runAsRoleId,
                   additionalRoleRestrictionIds,
                   additionalExcludedToolNames,
                 })
               : {
                   ...(await this.buildPreloadedRegistryTools({
                     toolContext,
-                    runAsRoleId,
                     additionalRoleRestrictionIds,
                     additionalExcludedToolNames,
                   })),

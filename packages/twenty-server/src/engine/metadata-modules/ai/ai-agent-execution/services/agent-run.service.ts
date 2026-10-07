@@ -323,12 +323,17 @@ export class AgentRunService
       : undefined;
 
     const { authContext, actorContext, callerRoleId }: AgentRunCallerContext =
-      runAsContext ??
-      (await this.resolveCallerContext({
-        workspaceId,
-        ref,
-        agentAuthContext: agentContext.authContext,
-      }));
+      isDefined(runAsContext)
+        ? {
+            authContext: runAsContext.authContext,
+            actorContext: runAsContext.actorContext,
+            callerRoleId: runAsContext.roleId,
+          }
+        : await this.resolveCallerContext({
+            workspaceId,
+            ref,
+            agentAuthContext: agentContext.authContext,
+          });
 
     const memberUserWorkspaceId = isUserAuthContext(authContext)
       ? authContext.userWorkspaceId
@@ -353,10 +358,8 @@ export class AgentRunService
         runAsContext?.authContext.userWorkspaceId ?? ref.requestUserWorkspaceId,
       rolePermissionConfig: buildAgentRolePermissionConfig({
         agentRoleId: agentContext.agentRoleId,
-        runAsRoleId: runAsContext?.roleId,
         additionalRoleRestrictionIds,
       }),
-      runAsRoleId: runAsContext?.roleId,
       additionalRoleRestrictionIds,
       conversationActor: isDefined(memberUserWorkspaceId)
         ? { type: 'user', userWorkspaceId: memberUserWorkspaceId }

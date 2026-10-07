@@ -26,6 +26,7 @@ type GlobalTestContext = {
 
 type TestContext = {
   token: (globalContext: GlobalTestContext) => string;
+  runAsWorkspaceMemberId?: string;
   roleTargetId: string;
   isMember: boolean;
 };
@@ -44,6 +45,15 @@ const callerRunTestCases: EachTestingContext<TestContext>[] = [
     context: {
       token: (globalContext) => globalContext.janeApplicationToken,
       roleTargetId: USER_WORKSPACE_DATA_SEED_IDS.JANE,
+      isMember: true,
+    },
+  },
+  {
+    title: 'the application runs its agent as a member',
+    context: {
+      token: (globalContext) => globalContext.applicationToken,
+      runAsWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
+      roleTargetId: USER_WORKSPACE_DATA_SEED_IDS.JONY,
       isMember: true,
     },
   },
@@ -123,9 +133,9 @@ describe('Agent run tools should be limited to the caller role', () => {
       const execution = await captureAgentRunExecution({
         agentUniversalIdentifier: globalTestContext.agentUniversalIdentifier,
         token: context.token(globalTestContext),
+        runAsWorkspaceMemberId: context.runAsWorkspaceMemberId,
       });
 
-      expect(execution.runAsRoleId).toBeUndefined();
       expect(execution.additionalRoleRestrictionIds).toEqual([
         await findCallerRoleId(context.roleTargetId),
         ...(context.isMember ? [globalTestContext.applicationRoleId] : []),
@@ -133,28 +143,12 @@ describe('Agent run tools should be limited to the caller role', () => {
     },
   );
 
-  it('should restrict the agent role to the member and application roles when the application runs as a member', async () => {
-    const execution = await captureAgentRunExecution({
-      agentUniversalIdentifier: globalTestContext.agentUniversalIdentifier,
-      token: globalTestContext.applicationToken,
-      runAsWorkspaceMemberId: WORKSPACE_MEMBER_DATA_SEED_IDS.JONY,
-    });
-
-    expect(execution.runAsRoleId).toBe(
-      await findCallerRoleId(USER_WORKSPACE_DATA_SEED_IDS.JONY),
-    );
-    expect(execution.additionalRoleRestrictionIds).toEqual([
-      globalTestContext.applicationRoleId,
-    ]);
-  });
-
   it('should keep the agent role alone when the application runs its own agent', async () => {
     const execution = await captureAgentRunExecution({
       agentUniversalIdentifier: globalTestContext.agentUniversalIdentifier,
       token: globalTestContext.applicationToken,
     });
 
-    expect(execution.runAsRoleId).toBeUndefined();
     expect(execution.additionalRoleRestrictionIds).toBeUndefined();
   });
 });
