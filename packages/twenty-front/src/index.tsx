@@ -14,6 +14,7 @@ import 'twenty-ui/style.css';
 import 'twenty-ui/theme-light.css';
 import 'twenty-ui/theme-dark.css';
 import './index.css';
+import './branding/avity-theme.css';
 
 const renderApp = () => {
   const root = ReactDOM.createRoot(

@@ -37,7 +37,7 @@ export const MultiWorkspaceDropdownClickableComponent = ({
         name={currentWorkspace?.displayName || ''}
         colorSeed={getWorkspaceAvatarColorSeed(currentWorkspace?.displayName)}
         src={getAbsoluteImageUrl(
-          currentWorkspace?.logo ?? DEFAULT_WORKSPACE_LOGO,
+          currentWorkspace?.logo || DEFAULT_WORKSPACE_LOGO,
         )}
       />
       {!shouldHideLabel && (

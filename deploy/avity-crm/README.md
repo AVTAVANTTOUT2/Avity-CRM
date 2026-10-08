@@ -7,6 +7,12 @@ SHA upstream `7e1431c84adbb264db98ab8b8d008a8401b6d4d6`.
 Branche de déploiement : `deploy/twenty-v2.45.0`.
 Les licences et mentions Twenty restent dans les fichiers d'origine.
 
+Le lot prépare un [staging isolé](STAGING.md), une [sauvegarde complète](BACKUP.md)
+et l'[identité Avity](BRANDING.md). Sa [promotion et son rollback](DEPLOYMENT.md)
+exigent une autorisation distincte ; cette PR ne change pas la production.
+Les [résultats et captures de qualification](QUALIFICATION.md) distinguent les
+essais isolés et les fonctions préparées qui restent inactives en production.
+
 ## Construction et installation
 
 Le workflow **Avity CRM image** construit la cible officielle `twenty`
@@ -98,19 +104,21 @@ sa sortie développe les secrets.
 
 ## Sauvegarde et restauration
 
+La couverture complète, le chiffrement, les rétentions, la reprise après erreur
+et la planification préparée sont dans [BACKUP.md](BACKUP.md). Le snapshot inclut
+sources/images durables et les cinq fichiers de publication. Ces nouveaux scripts
+seront disponibles sur le VPS après une promotion autorisée ; aucune planification
+de production n'est activée par cette PR.
+
 ```bash
 sudo /opt/avity-crm/current/deploy/avity-crm/backup.sh
 ```
 
-La sauvegarde suspend uniquement les écritures du CRM pendant le dump
-PostgreSQL et les archives du stockage et de Redis. Le script reprend les
-services initialement actifs. Les snapshots sont dans
-`/var/backups/avity-crm/<date UTC>` (root, accès privé). Ils contiennent les
-secrets nécessaires au déchiffrement, le Compose et les références d'images.
-Conserver aussi l'image exportée et le source du SHA hors du VPS ; la rétention
-de l'artefact Actions est de 30 jours. Pour une restauration de l'accès public,
-conserver également les configurations, unités et credentials du tunnel décrits
-dans [cloudflare/README.md](cloudflare/README.md).
+La sauvegarde suspend seulement les écrivains CRM initialement actifs, puis les
+reprend sans recréer leurs conteneurs. Les snapshots privés sous
+`/var/backups/avity-crm/` contiennent PostgreSQL, stockage, Redis, secrets,
+administration, déploiement, sources/images durables et publication dédiée.
+Seuls les snapshots vérifiés et marqués `COMPLETE` sont restaurables.
 
 Tester d'abord la restauration dans une base et des volumes temporaires isolés.
 Pour restaurer l'instance, après autorisation de perdre les écritures postérieures

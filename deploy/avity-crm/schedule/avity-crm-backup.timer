@@ -1,0 +1,11 @@
+[Unit]
+Description=Avity CRM configurable daily snapshot (prepare before enabling)
+
+[Timer]
+OnCalendar=*-*-* 03:50:00 UTC
+RandomizedDelaySec=10min
+Persistent=true
+Unit=avity-crm-backup.service
+
+[Install]
+WantedBy=timers.target

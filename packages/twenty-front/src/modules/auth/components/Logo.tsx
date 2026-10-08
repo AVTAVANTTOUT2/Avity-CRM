@@ -1,3 +1,4 @@
+import { AVITY_BRAND_ICON, AVITY_BRAND_NAME } from '~/branding/avity-brand';
 import { UndecoratedLink } from '@/ui/navigation/link/components/UndecoratedLink/UndecoratedLink';
 import { getWorkspaceAvatarColorSeed } from '@/workspace/utils/getWorkspaceAvatarColorSeed';
 import { styled } from '@linaria/react';
@@ -19,11 +20,22 @@ type LogoProps = {
 
 const StyledContainer = styled.div`
   height: ${themeCssVariables.spacing[12]};
-  margin-bottom: ${themeCssVariables.spacing[4]};
+  margin-bottom: ${themeCssVariables.spacing[8]};
   margin-top: ${themeCssVariables.spacing[4]};
 
   position: relative;
   width: ${themeCssVariables.spacing[12]};
+`;
+
+const StyledBrandName = styled.span`
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.md};
+  font-weight: 600;
+  left: 50%;
+  position: absolute;
+  top: calc(100% + ${themeCssVariables.spacing[2]});
+  transform: translateX(-50%);
+  white-space: nowrap;
 `;
 
 const StyledSecondaryLogo = styled.img`
@@ -60,7 +72,7 @@ export const Logo = ({
   to = AppPath.SignInUp,
 }: LogoProps) => {
   const { redirectToDefaultDomain } = useRedirectToDefaultDomain();
-  const defaultPrimaryLogoUrl = `${window.location.origin}/images/icons/android/android-launchericon-192-192.png`;
+  const defaultPrimaryLogoUrl = `${window.location.origin}${AVITY_BRAND_ICON}`;
 
   const primaryLogoUrl = getImageAbsoluteURI({
     imageUrl: primaryLogo ?? defaultPrimaryLogoUrl,
@@ -82,7 +94,10 @@ export const Logo = ({
         <UndecoratedLink to={to} onClick={() => redirectToDefaultDomain()}>
           <StyledPrimaryLogo
             style={{ backgroundImage: `url(${primaryLogoUrl})` }}
+            role="img"
+            aria-label={AVITY_BRAND_NAME}
           />
+          <StyledBrandName>{AVITY_BRAND_NAME}</StyledBrandName>
         </UndecoratedLink>
       ) : (
         <StyledPrimaryLogo

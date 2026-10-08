@@ -1,0 +1,19 @@
+[Unit]
+Description=Complete encrypted Avity CRM backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/avity-crm/backup.env
+ExecStart=/opt/avity-crm/current/deploy/avity-crm/backup-job.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=30min
+# SIGKILL/power loss require the documented manual service-state recovery.
+TimeoutStopSec=10min
+KillMode=process

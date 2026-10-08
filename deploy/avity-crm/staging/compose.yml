@@ -1,0 +1,45 @@
+# Both services use the exact same candidate; PostgreSQL and Redis remain native.
+services:
+  server:
+    platform: linux/amd64
+    ports: !reset []
+    environment:
+      NODE_OPTIONS: --max-old-space-size=1536
+    cpus: 1.5
+  worker:
+    platform: linux/amd64
+    mem_limit: 1536m
+    cpus: 1
+
+  gateway:
+    image: nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236
+    user: '101:101'
+    entrypoint: [nginx]
+    command: [-g, 'daemon off;']
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp]
+    volumes:
+      - ./staging/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '127.0.0.1:${HTTP_PORT:?Set staging HTTP_PORT}:8080'
+    networks: [default, ingress]
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.25
+    logging:
+      driver: json-file
+      options:
+        max-size: '5m'
+        max-file: '2'
+
+# Prevent outbound traffic even if an integration is accidentally enabled.
+# No other Compose project joins this network.
+networks:
+  default:
+    internal: true
+  ingress:
