@@ -48,3 +48,8 @@ npx nx run twenty-front:graphql:generate      # after GraphQL schema changes (--
 - **Entity file changes need a generated instance command**: `npx nx run twenty-server:database:migrate:generate --name <name> --type <fast|slow>` (slow = adds a data-backfill step).
 - A read-only Postgres MCP server is configured in `.mcp.json` for inspecting workspace data, metadata, and migration results. Writes go through the CLI commands above.
 - E2E login: click "Continue with Email" and use the prefilled credentials.
+
+## Cursor Cloud specific instructions
+
+- `node` and `yarn` on `PATH` are wrappers. Cloud Agent shells set `NO_COLOR=1` and `FORCE_COLOR=0`. Nx rewrites `FORCE_COLOR=0` into `NO_COLOR=1`, then runs tasks with `FORCE_COLOR=true`. `@prettier/sync` never exits when both are set, so targets such as `generateBarrels` hang. The wrappers unset `NO_COLOR` and turn `FORCE_COLOR=0` into `1`. Invoke those commands, not `/usr/local/lib/nodejs/bin/node`.
+- Postgres 16 (`postgres`/`postgres` on `localhost:5432`) and Redis (`localhost:6379`) are started by `bash packages/twenty-utils/setup-dev-env.sh`. The app listens on `http://localhost:3000` (API) and `http://localhost:3001` (UI). The UI binds IPv6 localhost, so use `localhost`, not `127.0.0.1`.
