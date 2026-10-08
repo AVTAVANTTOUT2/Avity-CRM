@@ -1,3 +1,4 @@
+import { getAvityPageTitle } from '~/branding/avity-brand';
 import { Helmet } from '@dr.pogodin/react-helmet';
 
 import { useWorkspaceSurface } from '@/ui/layout/hooks/useWorkspaceSurface';
@@ -15,7 +16,7 @@ export const PageTitle = (props: PageTitleProps) => {
 
   return (
     <Helmet>
-      <title>{props.title}</title>
+      <title>{getAvityPageTitle(props.title)}</title>
     </Helmet>
   );
 };

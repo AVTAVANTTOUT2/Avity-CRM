@@ -1,0 +1,63 @@
+html.light {
+  --avity-accent: #216470;
+  --avity-accent-hover: #184e58;
+  --avity-accent-active: #153f47;
+  --avity-accent-text: #ffffff;
+  --t-accent-primary: #bfdcde;
+  --t-accent-secondary: #cce5e6;
+  --t-accent-tertiary: #e4f1f1;
+  --t-accent-quaternary: #f2f8f8;
+  --t-accent-accent3570: #44808a;
+  --t-accent-accent4060: #44808a;
+  --t-accent-accent1: #fafdfd;
+  --t-accent-accent2: #f2f8f8;
+  --t-accent-accent3: #e4f1f1;
+  --t-accent-accent4: #d7eaea;
+  --t-accent-accent5: #bfdcde;
+  --t-accent-accent6: #a1c8cc;
+  --t-accent-accent7: #79aeb5;
+  --t-accent-accent8: #44808a;
+  --t-accent-accent9: #216470;
+  --t-accent-accent10: #184e58;
+  --t-accent-accent11: #184e58;
+  --t-accent-accent12: #153f47;
+}
+
+html.dark {
+  --avity-accent: #83c5cc;
+  --avity-accent-hover: #a4d7dc;
+  --avity-accent-active: #bde4e7;
+  --avity-accent-text: #102c32;
+  --t-accent-primary: #294e56;
+  --t-accent-secondary: #24454d;
+  --t-accent-tertiary: #1e383e;
+  --t-accent-quaternary: #192d32;
+  --t-accent-accent3570: #83c5cc;
+  --t-accent-accent4060: #83c5cc;
+  --t-accent-accent1: #142428;
+  --t-accent-accent2: #192d32;
+  --t-accent-accent3: #1e383e;
+  --t-accent-accent4: #24454d;
+  --t-accent-accent5: #294e56;
+  --t-accent-accent6: #33616a;
+  --t-accent-accent7: #44808a;
+  --t-accent-accent8: #66a8b1;
+  --t-accent-accent9: #83c5cc;
+  --t-accent-accent10: #a4d7dc;
+  --t-accent-accent11: #a4d7dc;
+  --t-accent-accent12: #bde4e7;
+}
+
+/* Only accent buttons, preserving semantic blues in tags and statuses. */
+html button[data-color='accent'] {
+  --tw-button-color: var(--avity-accent);
+  --tw-button-hover: var(--t-accent-tertiary);
+  --tw-button-active: var(--t-accent-secondary);
+}
+
+html button[data-color='accent'][data-variant='solid'] {
+  --tw-button-background: var(--avity-accent);
+  --tw-button-color: var(--avity-accent-text);
+  --tw-button-hover: var(--avity-accent-hover);
+  --tw-button-active: var(--avity-accent-active);
+}

@@ -1,3 +1,4 @@
+import { AVITY_BRAND_NAME } from '~/branding/avity-brand';
 import { StyledAuthContent } from '@/auth/components/StyledAuthContent';
 import { useSignInUp } from '@/auth/sign-in-up/hooks/useSignInUp';
 import { useSignInUpForm } from '@/auth/sign-in-up/hooks/useSignInUpForm';
@@ -117,7 +118,8 @@ export const SignInUp = () => {
     }
 
     if (isGlobalScope) {
-      return t`Welcome to Twenty`;
+      const workspaceName = AVITY_BRAND_NAME;
+      return t`Welcome, ${workspaceName}.`;
     }
 
     const workspaceName = workspacePublicData?.displayName;

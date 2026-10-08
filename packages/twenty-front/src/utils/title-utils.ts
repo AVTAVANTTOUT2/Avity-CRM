@@ -1,3 +1,4 @@
+import { AVITY_BRAND_NAME } from '~/branding/avity-brand';
 import { t } from '@lingui/core/macro';
 import { AppBasePath, AppPath, SettingsPath } from 'twenty-shared/types';
 
@@ -60,6 +61,6 @@ export const getPageTitleFromPath = (pathname: string): string => {
     case SettingsPathPrefixes.Community:
       return t`Community - Settings`;
     default:
-      return 'Twenty';
+      return AVITY_BRAND_NAME;
   }
 };
