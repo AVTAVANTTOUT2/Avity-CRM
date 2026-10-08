@@ -49,13 +49,13 @@ html.dark {
 }
 
 /* Only accent buttons, preserving semantic blues in tags and statuses. */
-html button[data-color='accent'] {
+html:is(.light, .dark) button[data-color='accent'] {
   --tw-button-color: var(--avity-accent);
   --tw-button-hover: var(--t-accent-tertiary);
   --tw-button-active: var(--t-accent-secondary);
 }
 
-html button[data-color='accent'][data-variant='solid'] {
+html:is(.light, .dark) button[data-color='accent'][data-variant='solid'] {
   --tw-button-background: var(--avity-accent);
   --tw-button-color: var(--avity-accent-text);
   --tw-button-hover: var(--avity-accent-hover);

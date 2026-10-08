@@ -20,6 +20,7 @@ Points de liaison dans `packages/twenty-front`, à vérifier lors des upgrades :
 | `src/modules/auth/components/Logo.tsx` | Logo et nom par défaut |
 | `src/pages/auth/SignInUp.tsx` | Nom propre dans une chaîne Lingui existante |
 | `DefaultWorkspaceLogo.ts` | Ressource par défaut de navigation/favicon |
+| `MultiWorkspaceDropdownClickableComponent.tsx` | Logo Avity dans la navigation quand le logo de l'espace est vide |
 | `LeftPanelSkeletonLoader.tsx` | Identité pendant le chargement desktop |
 | `PageContentSkeletonLoader.tsx`, `UserOrMetadataLoader.tsx` | Identité pendant le chargement mobile |
 

@@ -94,7 +94,9 @@ def main():
             raise RuntimeError('Uninvited signup was not refused.')
         health = data('query{getSystemHealthStatus{services{id status}}getQueueMetrics(queueName:"workspace-queue"){workers details{failed waiting active}}getInstanceAndAllWorkspacesUpgradeStatus{instanceUpgradeStatus{inferredVersion health}upToDateWorkspaceCount workspacesBehind{id}workspacesFailed{id}}}',endpoint='admin-panel')
         if any(s['status'] != 'OPERATIONAL' for s in health['getSystemHealthStatus']['services']):
-            raise RuntimeError('Dependency health failure.')
+            failed_services = ','.join(s['id'] + ':' + s['status'] for s in health['getSystemHealthStatus']['services']
+                                       if s['status'] != 'OPERATIONAL')
+            raise RuntimeError('Dependency health failure: ' + failed_services)
         if health['getQueueMetrics']['workers'] < 1 or health['getQueueMetrics']['details']['failed']:
             raise RuntimeError('Worker not healthy.')
         upgrade = health['getInstanceAndAllWorkspacesUpgradeStatus']
