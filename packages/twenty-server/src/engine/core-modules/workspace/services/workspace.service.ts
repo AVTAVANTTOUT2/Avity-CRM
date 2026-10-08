@@ -1161,9 +1161,11 @@ export class WorkspaceService {
     try {
       await queryRunner.startTransaction();
 
-      await prefillCompanies(queryRunner.manager, schemaName);
+      if (this.twentyConfigService.get('SHOULD_SEED_DEMO_DATA')) {
+        await prefillCompanies(queryRunner.manager, schemaName);
 
-      await prefillPeople(queryRunner.manager, schemaName);
+        await prefillPeople(queryRunner.manager, schemaName);
+      }
 
       await prefillWorkflows(
         queryRunner.manager,
@@ -1173,7 +1175,9 @@ export class WorkspaceService {
         flatFieldMetadataMaps,
       );
 
-      await prefillOpportunities(queryRunner.manager, schemaName);
+      if (this.twentyConfigService.get('SHOULD_SEED_DEMO_DATA')) {
+        await prefillOpportunities(queryRunner.manager, schemaName);
+      }
 
       await prefillDashboards(
         queryRunner.manager,
