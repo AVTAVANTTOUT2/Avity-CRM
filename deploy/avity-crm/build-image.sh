@@ -37,7 +37,13 @@ if [[ ${AVITY_CRM_VERIFY_FRONTEND:-0} == 1 ]]; then
 FROM twenty-front-build AS avity-frontend-check
 COPY ./packages/twenty-oxlint-rules /app/packages/twenty-oxlint-rules
 COPY ./jest.preset.js ./.oxfmtrc.jsonc /app/
-RUN yarn workspaces focus twenty-monorepo twenty-front twenty-front-component-renderer twenty-ui twenty-shared twenty-sdk twenty-client-sdk twenty-oxlint-rules && yarn cache clean
+COPY ./yarn.lock /app/yarn.lock
+COPY ./packages/twenty-server/package.json /app/packages/twenty-server/
+COPY ./packages/twenty-server/patches /app/packages/twenty-server/patches
+COPY ./packages/twenty-emails/package.json /app/packages/twenty-emails/
+# Frontend typings also use declarations installed by the server workspace in
+# the normal monorepo. Reuse its locked dependencies without changing packages.
+RUN yarn workspaces focus twenty-monorepo twenty-front twenty-front-component-renderer twenty-ui twenty-shared twenty-sdk twenty-client-sdk twenty-oxlint-rules twenty-server twenty-emails && yarn cache clean
 DOCKERFILE
   docker build --platform linux/amd64 --target avity-frontend-check \
     --file "$validation_dockerfile" \

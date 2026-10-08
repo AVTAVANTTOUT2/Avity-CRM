@@ -104,7 +104,8 @@ sa sortie développe les secrets.
 
 La couverture complète, le chiffrement, les rétentions, la reprise après erreur
 et la planification préparée sont dans [BACKUP.md](BACKUP.md). Le snapshot inclut
-sources/images durables et les cinq fichiers de publication ; aucune planification
+sources/images durables et les cinq fichiers de publication. Ces nouveaux scripts
+seront disponibles sur le VPS après une promotion autorisée ; aucune planification
 de production n'est activée par cette PR.
 
 ```bash
