@@ -29,7 +29,7 @@ Les secrets restent dans `/etc/avity-crm/avity-crm.env` (root, mode 0600).
 Ils doivent être générés individuellement, sans affichage, puis sauvegardés :
 `ENCRYPTION_KEY` (32 octets en base64), `APP_SECRET` et `PG_DATABASE_PASSWORD`.
 Le fichier contient également `GIT_SHA`, `HTTP_PORT=3020` et
-`SERVER_URL=http://localhost:3020`.
+`SERVER_URL=https://crm.avity.fr` pour l'installation publique actuelle.
 
 Après vérification du checksum, charger l'artefact avec `docker load` et
 installer l'archive Git du même SHA. Démarrer avec :
@@ -46,15 +46,22 @@ Ne jamais lancer le Compose upstream pour cette installation.
 
 ## Accès et administration
 
-En attendant un domaine établi et son accès HTTPS, utiliser le tunnel SSH :
+L'URL publique est **https://crm.avity.fr**. Cloudflare publie le DNS et termine
+TLS ; un tunnel dédié rejoint un proxy Nginx privé par socket Unix. Le proxy
+redirige HTTP vers HTTPS et transmet l'origine HTTPS au CRM sur `127.0.0.1:3020`.
+Les configurations et tunnels des autres applications restent inchangés.
+Les fichiers et procédures sont dans [cloudflare/README.md](cloudflare/README.md).
+
+Pour un diagnostic local, le tunnel SSH reste disponible :
 
 ```bash
 ssh -N -L 127.0.0.1:3020:127.0.0.1:3020 VPS
 ```
 
-Ouvrir http://localhost:3020, créer le premier compte par e-mail/mot de passe,
-puis finaliser l'espace Avity. Le premier compte reçoit l'administration
-de l'instance. Après cette initialisation, le mode mono-espace et la restriction
+La connexion utilise https://crm.avity.fr ; les cookies HTTP de localhost
+ne sont pas réutilisés. Le compte administrateur et l'espace Avity-CRM existent
+déjà. Les identifiants restent dans `/etc/avity-crm/admin.json` (root, mode 0600).
+Le premier compte reçoit l'administration de l'instance. Le mode mono-espace et la restriction
 aux administrateurs ferment la création libre de comptes/espaces.
 Tester également le refus d'une nouvelle inscription non invitée.
 
@@ -66,10 +73,10 @@ messagerie/calendrier, télémétrie et synchronisation du catalogue sont désac
 Le driver e-mail `LOGGER` ne transmet pas de messages. Les logs et sauvegardes
 doivent néanmoins rester privés, car les liens de connexion peuvent y figurer.
 
-Une publication future doit ajouter une route au reverse proxy existant,
-après confirmation du domaine, sans écraser les autres routes. Mettre
-`SERVER_URL` à l'URL HTTPS réelle. Aucune modification DNS n'est nécessaire
-pour le tunnel SSH.
+`SERVER_URL` est désormais `https://crm.avity.fr` sur le serveur et le worker.
+L'image applicative, les secrets, les volumes et les données restent ceux de la
+release installée. Le changement d'origine nécessite une nouvelle connexion,
+sans reconstruction du frontend ni nouvel espace de travail.
 
 ## Vérifications
 
@@ -101,7 +108,9 @@ services initialement actifs. Les snapshots sont dans
 `/var/backups/avity-crm/<date UTC>` (root, accès privé). Ils contiennent les
 secrets nécessaires au déchiffrement, le Compose et les références d'images.
 Conserver aussi l'image exportée et le source du SHA hors du VPS ; la rétention
-de l'artefact Actions est de 30 jours.
+de l'artefact Actions est de 30 jours. Pour une restauration de l'accès public,
+conserver également les configurations, unités et credentials du tunnel décrits
+dans [cloudflare/README.md](cloudflare/README.md).
 
 Tester d'abord la restauration dans une base et des volumes temporaires isolés.
 Pour restaurer l'instance, après autorisation de perdre les écritures postérieures

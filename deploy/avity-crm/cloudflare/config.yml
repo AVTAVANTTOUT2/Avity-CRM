@@ -1,0 +1,7 @@
+tunnel: f64f0461-f99f-4c92-8963-ca24deca5619
+credentials-file: /etc/cloudflared-avity-crm/credentials.json
+metrics: 127.0.0.1:20320
+ingress:
+  - hostname: crm.avity.fr
+    service: unix:/run/avity-crm-proxy/http.sock
+  - service: http_status:404

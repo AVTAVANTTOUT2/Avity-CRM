@@ -1,0 +1,31 @@
+[Unit]
+Description=Cloudflare Tunnel for Avity CRM
+Wants=network-online.target avity-crm-proxy.service
+After=network-online.target docker.service avity-crm-proxy.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=cloudflared-avity-crm
+Group=cloudflared-avity-crm
+SupplementaryGroups=avity-crm-ingress
+ExecStart=/usr/local/bin/cloudflared --no-autoupdate --config /etc/cloudflared-avity-crm/config.yml tunnel run
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=90
+TimeoutStopSec=45
+LimitNOFILE=524288
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=256M
+CPUQuota=25%
+
+[Install]
+WantedBy=multi-user.target

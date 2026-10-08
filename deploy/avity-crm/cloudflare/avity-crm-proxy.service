@@ -1,0 +1,30 @@
+[Unit]
+Description=Private HTTPS redirect and origin proxy for Avity CRM
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=avity-crm-proxy
+Group=avity-crm-ingress
+RuntimeDirectory=avity-crm-proxy
+RuntimeDirectoryMode=0750
+ExecStart=/usr/sbin/nginx -c /etc/avity-crm-proxy/nginx.conf -g "daemon off;"
+ExecReload=/bin/kill -s HUP $MAINPID
+KillSignal=SIGQUIT
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+UMask=0007
+MemoryMax=128M
+CPUQuota=15%
+
+[Install]
+WantedBy=multi-user.target
