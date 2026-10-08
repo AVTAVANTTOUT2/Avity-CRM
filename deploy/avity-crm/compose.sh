@@ -39,6 +39,12 @@ case "$project" in
     fi
     python3 "$deployment_directory/staging-guard.py" "$environment_file"
     compose_files+=(--file "$deployment_directory/staging/compose.yml")
+    if [[ $project == avity-crm-staging-restore ]]; then
+      [[ -f "$deployment_directory/staging/restore-images.yml" ]] || {
+        printf 'Restore requires its verified local image inventory.\n' >&2; exit 1;
+      }
+      compose_files+=(--file "$deployment_directory/staging/restore-images.yml")
+    fi
     ;;
   *) printf 'Unsupported CRM project.\n' >&2; exit 1 ;;
 esac

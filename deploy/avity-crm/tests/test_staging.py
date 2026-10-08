@@ -84,6 +84,22 @@ class StagingTestHarness(unittest.TestCase):
         )
         self.environment_file.chmod(mode)
 
+    def write_restore_inventory(self):
+        references = {
+            'server': 'avity-crm-restore:application-' + CANDIDATE_SHA,
+            'worker': 'avity-crm-restore:application-' + CANDIDATE_SHA,
+            'db': 'avity-crm-restore:db-' + CANDIDATE_SHA,
+            'redis': 'avity-crm-restore:redis-' + CANDIDATE_SHA,
+            'gateway': 'avity-crm-restore:gateway-' + CANDIDATE_SHA,
+        }
+        inventory = self.deployment / 'staging/restore-images.yml'
+        inventory.write_text('services:\n' + ''.join(
+            f'  {service}:\n    image: {reference}\n'
+            for service, reference in references.items()
+        ))
+        inventory.chmod(0o600)
+        return references
+
     def run_script(self, name, *arguments, environment_updates=None):
         environment = self.environment.copy()
         for key, value in (environment_updates or {}).items():
@@ -155,6 +171,8 @@ class ComposeGuardTests(StagingTestHarness):
     def test_valid_projects_preserve_command_arguments_and_private_output(self):
         for project in ('avity-crm-staging', 'avity-crm-staging-restore'):
             with self.subTest(project=project):
+                if project == 'avity-crm-staging-restore':
+                    self.write_restore_inventory()
                 result = self.run_script(
                     'compose.sh', 'exec', '-T', 'server', 'node', '-e', '1 + 1',
                     environment_updates={'AVITY_CRM_PROJECT': project},
@@ -171,6 +189,19 @@ class ComposeGuardTests(StagingTestHarness):
                     str(self.deployment / 'compose.yml'),
                 )
                 self.assertIn(str(self.deployment / 'staging/compose.yml'), command)
+                restore_file = str(self.deployment / 'staging/restore-images.yml')
+                if project == 'avity-crm-staging-restore':
+                    self.assertIn(restore_file, command)
+                else:
+                    self.assertNotIn(restore_file, command)
+
+    def test_restore_project_requires_its_verified_local_image_inventory(self):
+        result = self.run_script(
+            'compose.sh', 'up', '-d',
+            environment_updates={'AVITY_CRM_PROJECT': 'avity-crm-staging-restore'},
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assert_no_docker()
 
     def test_global_cli_options_cannot_override_project_files_or_credentials(self):
         forbidden_arguments = (
@@ -595,6 +626,35 @@ class MergedComposeTests(StagingTestHarness):
                 ):
                     self.assertEqual(environment[key], 'false')
                 self.assertEqual(environment['SERVER_URL'], 'http://localhost:3021')
+
+    def test_restore_merge_uses_only_the_restored_local_images_and_its_own_volumes(self):
+        references = self.write_restore_inventory()
+        result = subprocess.run(
+            [
+                shutil.which('docker'), 'compose', '--project-name', 'avity-crm-staging-restore',
+                '--env-file', str(self.environment_file),
+                '--file', str(self.deployment / 'compose.yml'),
+                '--file', str(self.deployment / 'staging/compose.yml'),
+                '--file', str(self.deployment / 'staging/restore-images.yml'),
+                'config', '--format', 'json',
+            ],
+            env={**os.environ, **self.values}, capture_output=True, text=True, timeout=20,
+        )
+        self.assertEqual(result.returncode, 0)
+        configuration = json.loads(result.stdout)
+        self.assertEqual(configuration['name'], 'avity-crm-staging-restore')
+        self.assertEqual(
+            {service: configuration['services'][service]['image'] for service in references},
+            references,
+        )
+        for service in ('server', 'worker'):
+            self.assertEqual(configuration['services'][service]['pull_policy'], 'never')
+        self.assertTrue(all(
+            volume['name'].startswith('avity-crm-staging-restore_')
+            and not volume.get('external', False)
+            for volume in configuration['volumes'].values()
+        ))
+        self.assert_no_docker()
 
 
 if __name__ == '__main__':
