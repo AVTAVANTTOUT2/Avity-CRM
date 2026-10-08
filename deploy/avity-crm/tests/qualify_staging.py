@@ -111,6 +111,10 @@ def main():
         data('mutation($id:UUID!,$data:CompanyUpdateInput!){updateCompany(id:$id,data:$data){id name}}',
              {'id':oracle['company_id'],'data':{'name':'AVITY-STAGING-SYNTHETIC-AFTER-SNAPSHOT-B'}},'graphql')
         print('Synthetic record changed after snapshot')
+    elif phase == 'reset-record':
+        data('mutation($id:UUID!,$data:CompanyUpdateInput!){updateCompany(id:$id,data:$data){id name}}',
+             {'id':oracle['company_id'],'data':{'name':oracle['company_name']}},'graphql')
+        print('Synthetic record reset to the qualification oracle')
     else:
         raise RuntimeError('Unknown qualification phase.')
 

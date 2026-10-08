@@ -24,6 +24,7 @@ jobs:
           sudo python3 deploy/avity-crm/tests/test_backup.py
           sudo python3 deploy/avity-crm/tests/test_staging.py
           sudo python3 deploy/avity-crm/tests/test_export.py
+          sudo python3 deploy/avity-crm/tests/test_restore.py
       - name: Build the exact fork commit
         env:
           AVITY_CRM_VERIFY_FRONTEND: '1'
