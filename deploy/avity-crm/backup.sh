@@ -10,10 +10,11 @@ fi
 deployment_directory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 environment_file=${AVITY_CRM_ENV_FILE:-/etc/avity-crm/avity-crm.env}
 backup_root=${AVITY_CRM_BACKUP_ROOT:-/var/backups/avity-crm}
+lock_file=${AVITY_CRM_BACKUP_LOCK:-/run/lock/avity-crm-backup.lock}
 backup_directory="$backup_root/$(date -u +%Y%m%dT%H%M%SZ)"
 compose="$deployment_directory/compose.sh"
 
-exec 9>/run/lock/avity-crm-backup.lock
+exec 9>"$lock_file"
 flock -n 9 || { printf 'Another CRM backup is running.\n' >&2; exit 1; }
 mkdir -p "$backup_directory"
 
@@ -46,6 +47,9 @@ finish_backup() {
   exit "$result"
 }
 trap finish_backup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 "$compose" stop server worker
 "$compose" exec -T redis redis-cli SAVE >/dev/null

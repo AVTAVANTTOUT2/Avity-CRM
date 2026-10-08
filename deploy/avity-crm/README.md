@@ -112,8 +112,11 @@ Pour restaurer l'instance, après autorisation de perdre les écritures postéri
 3. Restaurer le fichier de secrets correspondant (mode 0600), le source et
    l'image correspondant au snapshot. Recréer le conteneur DB seulement si
    ses paramètres ont changé.
-4. Restaurer le dump avec `pg_restore --clean --if-exists --no-owner
+4. Supprimer puis recréer uniquement la base `avity_crm` vide, avec le
+   propriétaire `avity_crm`, puis restaurer avec `pg_restore --no-owner
    --exit-on-error -U avity_crm -d avity_crm` via `compose.sh exec -T db`.
+   Une simple restauration `--clean` laisserait des objets ajoutés après le
+   snapshot et ne constitue pas un rollback fiable.
 5. Remplacer le contenu des volumes CRM de stockage et de Redis avec leurs
    archives, tous les consommateurs arrêtés. Ne pas toucher aux autres volumes.
 6. Démarrer avec `up -d --no-build --pull never`, puis vérifier santé, migrations,
