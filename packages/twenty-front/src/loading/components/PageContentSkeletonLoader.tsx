@@ -6,10 +6,14 @@ import Skeleton, { SkeletonTheme } from 'react-loading-skeleton';
 import { useTheme } from 'twenty-ui/theme';
 
 type PageContentSkeletonLoaderProps = {
+  headerIcon?: ReactNode;
+  headerTitle?: ReactNode;
   secondaryBar?: ReactNode;
 };
 
 export const PageContentSkeletonLoader = ({
+  headerIcon,
+  headerTitle,
   secondaryBar,
 }: PageContentSkeletonLoaderProps) => {
   const theme = useTheme();
@@ -23,12 +27,14 @@ export const PageContentSkeletonLoader = ({
       <PageCardLayout
         header={
           <PageCardHeader
-            icon={<Skeleton width={20} height={20} />}
+            icon={headerIcon ?? <Skeleton width={20} height={20} />}
             title={
-              <Skeleton
-                width={120}
-                height={SKELETON_LOADER_HEIGHT_SIZES.standard.s}
-              />
+              headerTitle ?? (
+                <Skeleton
+                  width={120}
+                  height={SKELETON_LOADER_HEIGHT_SIZES.standard.s}
+                />
+              )
             }
             actionButton={
               <Skeleton
