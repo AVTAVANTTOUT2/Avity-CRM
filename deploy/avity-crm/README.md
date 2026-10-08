@@ -10,7 +10,8 @@ Les licences et mentions Twenty restent dans les fichiers d'origine.
 ## Construction et installation
 
 Le workflow **Avity CRM image** construit la cible officielle `twenty`
-(interface et serveur) depuis le commit du fork. L'image
+(interface et serveur) depuis une archive Git vierge du commit du fork,
+sans réutiliser des fichiers de compilation locaux. L'image
 `avity-crm:git-<SHA complet>` inclut le SHA dans son label OCI `revision`.
 L'artefact Actions contient l'image, sa provenance et `SHA256SUMS`.
 Le serveur et le worker utilisent exactement cette même image.

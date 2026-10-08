@@ -17,19 +17,35 @@ exec 9>/run/lock/avity-crm-backup.lock
 flock -n 9 || { printf 'Another CRM backup is running.\n' >&2; exit 1; }
 mkdir -p "$backup_directory"
 
+service_listing=$("$compose" ps --status running --services)
 running_services=()
 while IFS= read -r service; do
   case "$service" in
     server|worker|redis) running_services+=("$service") ;;
   esac
-done < <("$compose" ps --status running --services)
+done <<< "$service_listing"
 
 resume_services() {
-  if ((${#running_services[@]})); then
-    "$compose" up -d --no-build --pull never "${running_services[@]}"
-  fi
+  local service running_service
+  for service in redis server worker; do
+    for running_service in "${running_services[@]}"; do
+      if [[ $service == "$running_service" ]]; then
+        "$compose" up -d --no-build --pull never --no-deps \
+          --wait --wait-timeout 180 "$service" || return 1
+      fi
+    done
+  done
 }
-trap resume_services EXIT
+finish_backup() {
+  local result=$?
+  trap - EXIT
+  if ! resume_services; then
+    printf 'Backup finished but service recovery failed; inspect CRM containers.\n' >&2
+    exit 1
+  fi
+  exit "$result"
+}
+trap finish_backup EXIT
 
 "$compose" stop server worker
 "$compose" exec -T redis redis-cli SAVE >/dev/null
