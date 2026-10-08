@@ -10,6 +10,8 @@ Les licences et mentions Twenty restent dans les fichiers d'origine.
 Le lot prépare un [staging isolé](STAGING.md), une [sauvegarde complète](BACKUP.md)
 et l'[identité Avity](BRANDING.md). Sa [promotion et son rollback](DEPLOYMENT.md)
 exigent une autorisation distincte ; cette PR ne change pas la production.
+Les [résultats et captures de qualification](QUALIFICATION.md) distinguent les
+essais isolés et les fonctions préparées qui restent inactives en production.
 
 ## Construction et installation
 
