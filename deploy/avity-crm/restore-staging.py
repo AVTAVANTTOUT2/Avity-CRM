@@ -41,6 +41,13 @@ def validate_model(deployment, values, references, environment):
         safe = {**values, 'PG_DATABASE_PASSWORD':'synthetic-model-only',
                 'APP_SECRET':'synthetic-model-only', 'ENCRYPTION_KEY':'synthetic-model-only'}
         sanitized.write_text(''.join(f'{key}={value}\n' for key,value in safe.items()))
+        # Compose 2.38 resolves and discards env_file despite
+        # --no-env-resolution. Its raw, non-interpolated model retains the
+        # declaration without reading the file. Refuse it before canonicalizing.
+        raw_model = json.loads(run(compose_command(deployment,sanitized)+[
+            'config','--no-env-resolution','--no-interpolate','--no-normalize','--format','json'], environment))
+        if any(service.get('env_file') for service in raw_model.get('services',{}).values()):
+            raise ValueError('External restore environment files are forbidden.')
         model = json.loads(run(compose_command(deployment,sanitized)+[
             'config','--no-env-resolution','--format','json'], environment))
     logicals = {'db-data','redis-data','server-local-data'}

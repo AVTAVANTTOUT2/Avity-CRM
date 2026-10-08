@@ -461,7 +461,7 @@ class RestoreContractTests(unittest.TestCase):
 
     def test_service_external_environment_file_is_refused_without_expanding_its_secrets(self):
         external = self.directory / 'other-application.env'
-        external.write_text('APP_SECRET=' + export_test_fixtures.PRIVATE_MARKERS[1] + '\n')
+        external.write_text('EXTERNAL_ONLY_SECRET=' + export_test_fixtures.PRIVATE_MARKERS[1] + '\n')
         model = deepcopy(self.model)
         model['services']['server']['env_file'] = [str(external)]
         self.assert_model_refused_without_reset(model)

@@ -56,7 +56,7 @@ Ne jamais afficher le Compose développé ou la sortie d'un credential.
 Un échec garde `SNAPSHOT.incomplete/FAILED.json` avec étape, code et résultat de
 reprise. Aucune réussite ni rétention n'est annoncée. HUP/INT/TERM interrompent le
 processus externe puis attendent la reprise. Le job planifié relaie ces signaux.
-Prévoir jusqu'à3 × 180 secondes de reprise ; l'unité accorde 10 minutes à l'arrêt.
+Prévoir jusqu'à 3 × 180 secondes de reprise ; l'unité accorde 10 minutes à l'arrêt.
 
 SIGKILL, coupure électrique, Docker inaccessible ou disque plein peuvent empêcher
 la réparation automatique. Lire **le fichier privé** `service-state.json` de
@@ -127,7 +127,7 @@ cible **uniquement** `avity-crm-staging-restore`, dans
 des seuls volumes de ce projet. Il recharge les images depuis la capsule, restaure
 la base fraîche, remplace stockage/Redis et reprend l'application. Le port est lié
 à 127.0.0.1 ; les secrets du snapshot sont préservés, seule l'origine locale change.
-Les fichiers de publication sont restaurés dans un fixture privé, jamais dans `/etc`.
+Les fichiers de publication sont restaurés dans une fixture privée, jamais dans `/etc`.
 Aucun tunnel n'est lancé. Vérifier login, fiche synthétique, marqueurs fichier/Redis,
 worker et migrations ; comparer les checksums des fichiers de publication.
 
