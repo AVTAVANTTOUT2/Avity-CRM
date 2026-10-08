@@ -1,0 +1,40 @@
+name: Avity CRM image
+
+on:
+  push:
+    branches: [deploy/twenty-v2.45.0]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avity-crm-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build the exact fork commit
+        run: bash deploy/avity-crm/build-image.sh
+      - name: Export image and provenance
+        run: |
+          mkdir -p "$RUNNER_TEMP/avity-crm-image"
+          docker image inspect "avity-crm:git-$GITHUB_SHA" \
+            --format '{"id":{{json .Id}},"architecture":{{json .Architecture}},"os":{{json .Os}},"labels":{{json .Config.Labels}}}' \
+            > "$RUNNER_TEMP/avity-crm-image/image.json"
+          docker save "avity-crm:git-$GITHUB_SHA" | gzip -1 \
+            > "$RUNNER_TEMP/avity-crm-image/avity-crm-image.tar.gz"
+          cd "$RUNNER_TEMP/avity-crm-image"
+          sha256sum avity-crm-image.tar.gz image.json > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: avity-crm-image-${{ github.sha }}
+          path: ${{ runner.temp }}/avity-crm-image/
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
