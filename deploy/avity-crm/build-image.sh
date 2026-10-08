@@ -30,13 +30,20 @@ docker run --rm --network none --entrypoint sh "$image" -c \
 
 if [[ ${AVITY_CRM_VERIFY_FRONTEND:-0} == 1 ]]; then
   validation_image="avity-crm-front-check:git-$git_sha"
-  docker build --platform linux/amd64 --target twenty-front-build \
-    --file "$build_context/packages/twenty-docker/twenty/Dockerfile" \
+  validation_dockerfile="$build_context/.avity-frontend-check.Dockerfile"
+  cp "$build_context/packages/twenty-docker/twenty/Dockerfile" "$validation_dockerfile"
+  cat >> "$validation_dockerfile" <<'DOCKERFILE'
+
+FROM twenty-front-build AS avity-frontend-check
+COPY ./packages/twenty-oxlint-rules /app/packages/twenty-oxlint-rules
+COPY ./jest.preset.js ./.oxfmtrc.jsonc /app/
+RUN yarn workspaces focus twenty-monorepo twenty-front twenty-front-component-renderer twenty-ui twenty-shared twenty-sdk twenty-client-sdk twenty-oxlint-rules && yarn cache clean
+DOCKERFILE
+  docker build --platform linux/amd64 --target avity-frontend-check \
+    --file "$validation_dockerfile" \
     --tag "$validation_image" "$build_context"
   docker run --rm --network none \
-    --mount "type=bind,src=$build_context/packages/twenty-oxlint-rules,dst=/app/packages/twenty-oxlint-rules" \
     --mount "type=bind,src=$build_context/deploy/avity-crm,dst=/app/deploy/avity-crm,readonly" \
-    --mount "type=bind,src=$build_context/.oxfmtrc.jsonc,dst=/app/.oxfmtrc.jsonc,readonly" \
     --entrypoint sh "$validation_image" /app/deploy/avity-crm/verify-frontend.sh
 fi
 printf 'Built %s\n' "$image"
